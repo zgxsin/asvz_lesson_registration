@@ -7,9 +7,10 @@ from selenium.webdriver.common.by import By
 from webdriver_manager.chrome import ChromeDriverManager
 
 
-def register_for_asvz_lesson(lesson_id, frequency, attempts) -> None:
+def register_for_asvz_lesson(lesson_id, frequency, attempts, aai_login) -> None:
     """
     Register for an ASVZ lesson.
+    :param aai_login: Enable login by SWITCHaai ETH Zurich.
     :param attempts: The number of attempts to registration when the lesson has been released.
     :param frequency: The refreshing frequency for registration.
     :param lesson_id: The lesson id, which can be found from the website.
@@ -29,16 +30,39 @@ def register_for_asvz_lesson(lesson_id, frequency, attempts) -> None:
                                                  "2]/app-lesson-details/div/div/app-lessons-enrollment-button/button")
     login_button.click()
     driver.implicitly_wait(5)
-    login_user_name = driver.find_element(By.ID, "AsvzId")
-    # Todo: Add you username here.
-    login_user_name.send_keys("your_username")
+    if not aai_login:
+        login_user_name = driver.find_element(By.ID, "AsvzId")
+        # Todo: Add you username here.
+        login_user_name.send_keys("your_username")
 
-    login_password = driver.find_element(By.ID, "Password")
-    # Todo: Add you password here.
-    login_password.send_keys("your_password")
-    # Find the submit button.
-    submit = driver.find_element(By.XPATH, '/html/body/div/div[5]/div[1]/div/div[2]/div/form/div[3]/button')
-    submit.click()
+        login_password = driver.find_element(By.ID, "Password")
+        # Todo: Add you password here.
+        login_password.send_keys("your_password")
+        # Find the submit button.
+        submit = driver.find_element(By.XPATH, '/html/body/div/div[5]/div[1]/div/div[2]/div/form/div[3]/button')
+        submit.click()
+    else:
+        aai_login_button = driver.find_element(By.NAME, "provider")
+        aai_login_button.click()
+        driver.implicitly_wait(5)
+        drop_down_button = driver.find_element(By.ID, "userIdPSelection_iddicon")
+        drop_down_button.click()
+        driver.implicitly_wait(1)
+        # Todo: you might check your university here
+        aai_portal = driver.find_element(By.XPATH, "//div[@title='Universities: ETH Zurich']")
+        aai_portal.click()
+        driver.implicitly_wait(5)
+
+        login_user_name = driver.find_element(By.ID, "username")
+        login_password = driver.find_element(By.ID, "password")
+        submit = driver.find_element(By.XPATH, '/html/body/div[2]/main/section/div[2]/div[2]/form/div[5]/button')
+        # Todo: Add you username here. Notice this is only tested on ETH Zurich Portal.
+        login_user_name.send_keys("your_username")
+        # Todo: Add you password here. Notice this is only tested on ETH Zurich Portal.
+        login_password.send_keys("your_password")
+        submit.click()
+        # Todo (GZ): need to verify whether the page is login successfully.
+
     driver.implicitly_wait(5)
     # After logging in, if the register button cannot be found, the lesson is fully booked.
     if len(driver.find_elements(By.ID, "btnRegister")) == 0:
@@ -85,8 +109,9 @@ def main():
     my_parser.add_argument(
         '-attempts', '--attempts', help='The number of attempts to register when the lesson has been released.',
         default=50)
+    my_parser.add_argument('--SWITCHaai-ETH', action='store_true', help='Enable login by SWITCHaai ETH Zurich.')
     my_args = my_parser.parse_args()
-    register_for_asvz_lesson(my_args.id, my_args.frequency, my_args.attempts)
+    register_for_asvz_lesson(my_args.id, my_args.frequency, my_args.attempts, my_args.SWITCHaai_ETH)
 
 
 if __name__ == '__main__':
