@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+from enum import Enum
 from selenium import webdriver
 from selenium.common.exceptions import StaleElementReferenceException, NoSuchElementException
 from selenium.webdriver.chrome.service import Service
@@ -7,11 +8,99 @@ from selenium.webdriver.common.by import By
 from webdriver_manager.chrome import ChromeDriverManager
 
 
-def register_for_asvz_lesson(lesson_id, frequency, attempts, aai_login) -> None:
+class LessonState(Enum):
+    """
+    There are four states for a lesson.
+    1. The lesson registration is not open, prior to registration.
+    2. The lesson registration is open and it can be registered for.
+    3. The lesson registration is open and it has been fully booked.
+    4. The lesson registration deadline is passed.
+    """
+    NOT_OPEN = 1
+    OPEN_AVAILABLE = 2
+    OPEN_FULLY_BOOKED = 3
+    DEADLINE_PASSED = 4
+    UNKNOWN = 5
+
+
+def asvz_account_login(web_driver, username, password):
+    """
+    Use ASVZ membership account to login
+    :param web_driver: selenium.webdriver object.
+    :param username: The username of the ASVZ membership account.
+    :param password: The password of the ASVZ membership account.
+    :return: None
+    """
+    login_user_name = web_driver.find_element(By.ID, "AsvzId")
+    login_password = web_driver.find_element(By.ID, "Password")
+    login_user_name.send_keys(username)
+    login_password.send_keys(password)
+    # Find the submit button.
+    submit = web_driver.find_element(By.XPATH, '//button[text()="Login"]')
+    submit.click()
+
+
+def asvz_eth_portal_login(web_driver, username, password):
+    """
+    Use ETH Zurich university account to login
+    :param web_driver: selenium.webdriver object.
+    :param username: The username of the ETH Zurich university account.
+    :param password: The password of the ETH Zurich university account.
+    :return: None
+    """
+    aai_login_button = web_driver.find_element(By.NAME, "provider")
+    aai_login_button.click()
+    web_driver.implicitly_wait(5)
+    drop_down_button = web_driver.find_element(By.ID, "userIdPSelection_iddicon")
+    drop_down_button.click()
+    web_driver.implicitly_wait(1)
+    aai_portal = web_driver.find_element(By.XPATH, "//div[@title='Universities: ETH Zurich']")
+    aai_portal.click()
+    web_driver.implicitly_wait(5)
+
+    login_user_name = web_driver.find_element(By.ID, "username")
+    login_password = web_driver.find_element(By.ID, "password")
+    submit = web_driver.find_element(By.XPATH, '//button[text()="Login"]')
+    login_user_name.send_keys(username)
+    login_password.send_keys(password)
+    submit.click()
+    # Todo (GZ): need to verify whether the page is login successfully.
+
+
+def get_lesson_state(web_driver):
+    """
+    Get the lesson state.
+    :param web_driver: selenium.webdriver object.
+    :return: The lesson state.
+    """
+    lessons_enrollment_alert_button = web_driver.find_elements(By.XPATH, "//*/app-lessons-enrollment-button/alert/div")
+    if len(lessons_enrollment_alert_button) != 0:
+        if lessons_enrollment_alert_button[0].text == "Die Anmeldefrist ist vorbei.":
+            lesson_state = LessonState.DEADLINE_PASSED
+            print("Lesson state is: DEADLINE_PASSED")
+        elif lessons_enrollment_alert_button[0].text == "Die Lektion ist ausgebucht, du kannst dich daher nicht mehr " \
+                                                        "dafür einschreiben.":
+            lesson_state = LessonState.OPEN_FULLY_BOOKED
+            print("Lesson state is: OPEN_FULLY_BOOKED")
+        else:
+            lesson_state = LessonState.UNKNOWN
+            print("Lesson state is: UNKNOWN")
+    else:
+        lessons_enrollment_button = web_driver.find_elements(By.ID, "btnRegister")
+        assert (len(lessons_enrollment_button) != 0)
+        if len(web_driver.find_elements(By.CSS_SELECTOR, ".disabled")) != 0:
+            lesson_state = LessonState.NOT_OPEN
+            print("Lesson state is: NOT_OPEN")
+        else:
+            lesson_state = LessonState.OPEN_AVAILABLE
+            print("Lesson state is: OPEN_AVAILABLE")
+    return lesson_state
+
+
+def register_for_asvz_lesson(lesson_id, frequency, aai_login) -> None:
     """
     Register for an ASVZ lesson.
     :param aai_login: Enable login by SWITCHaai ETH Zurich.
-    :param attempts: The number of attempts to registration when the lesson has been released.
     :param frequency: The refreshing frequency for registration.
     :param lesson_id: The lesson id, which can be found from the website.
     :return: None
@@ -26,75 +115,54 @@ def register_for_asvz_lesson(lesson_id, frequency, attempts, aai_login) -> None:
     driver.get(registration_link)
     driver.implicitly_wait(5)
     # Find the login button.
-    login_button = driver.find_element(By.XPATH, "/html/body/app-root/div/div["
-                                                 "2]/app-lesson-details/div/div/app-lessons-enrollment-button/button")
+    login_button = driver.find_element(By.XPATH, "//*/app-lessons-enrollment-button/button")
     login_button.click()
     driver.implicitly_wait(5)
     if not aai_login:
-        login_user_name = driver.find_element(By.ID, "AsvzId")
-        # Todo: Add you username here.
-        login_user_name.send_keys("your_username")
-
-        login_password = driver.find_element(By.ID, "Password")
-        # Todo: Add you password here.
-        login_password.send_keys("your_password")
-        # Find the submit button.
-        submit = driver.find_element(By.XPATH, '/html/body/div/div[5]/div[1]/div/div[2]/div/form/div[3]/button')
-        submit.click()
+        asvz_account_login(driver, "your_username", "your_password")
     else:
-        aai_login_button = driver.find_element(By.NAME, "provider")
-        aai_login_button.click()
-        driver.implicitly_wait(5)
-        drop_down_button = driver.find_element(By.ID, "userIdPSelection_iddicon")
-        drop_down_button.click()
-        driver.implicitly_wait(1)
-        # Todo: you might check your university here
-        aai_portal = driver.find_element(By.XPATH, "//div[@title='Universities: ETH Zurich']")
-        aai_portal.click()
-        driver.implicitly_wait(5)
-
-        login_user_name = driver.find_element(By.ID, "username")
-        login_password = driver.find_element(By.ID, "password")
-        submit = driver.find_element(By.XPATH, '/html/body/div[2]/main/section/div[2]/div[2]/form/div[5]/button')
-        # Todo: Add you username here. Notice this is only tested on ETH Zurich Portal.
-        login_user_name.send_keys("your_username")
-        # Todo: Add you password here. Notice this is only tested on ETH Zurich Portal.
-        login_password.send_keys("your_password")
-        submit.click()
-        # Todo (GZ): need to verify whether the page is login successfully.
+        asvz_eth_portal_login(driver, "your_username", "your_password")
 
     driver.implicitly_wait(5)
-    # After logging in, if the register button cannot be found, the lesson is fully booked.
-    if len(driver.find_elements(By.ID, "btnRegister")) == 0:
-        print("The lesson has been fully booked!")
-        return
+    lesson_state = get_lesson_state(driver)
 
-    # https://stackoverflow.com/questions/44759907/find-element-by-class-name-for-multiple-classes
-    print_once_flag = True
-    try:
-        # Check whether the button is clickable or not.
-        while len(driver.find_elements(By.CSS_SELECTOR, ".disabled")) != 0:
-            # If the button is not clickable, refresh it at a certain frequency.
-            driver.refresh()
-            driver.implicitly_wait(1 / frequency)
-            if print_once_flag:
-                print(f"The lesson registration is not open, refreshing at {frequency}Hz.")
-                print_once_flag = False
-    except KeyboardInterrupt as e:
-        print(e)
-        return
-    # Once the button is clickable, it would not be disabled.
-    while attempts > 0:
-        try:
-            register_button = driver.find_element(By.ID, "btnRegister")
-            register_button.click()
-            print("The lesson has been registered successfully!")
+    while True:
+        if lesson_state == LessonState.DEADLINE_PASSED:
+            print("The lesson registration period is over. Exiting the program...")
             return
-        except (StaleElementReferenceException, NoSuchElementException) as e:
-            attempts = attempts - 1
-            print(f"Remaining attempt times: {attempts}...")
-
-    print("The lesson registration failed.")
+        elif lesson_state == LessonState.NOT_OPEN:
+            try:
+                # Refresh the webpage until the lesson_state changes.
+                while lesson_state == LessonState.NOT_OPEN:
+                    print(f"The lesson registration is not open, refreshing at {frequency}Hz.")
+                    driver.refresh()
+                    lesson_state = get_lesson_state(driver)
+                    driver.implicitly_wait(1 / frequency)
+            except KeyboardInterrupt as e:
+                return
+        elif lesson_state == LessonState.OPEN_AVAILABLE:
+            # Once the button is clickable, proceed to register.
+            try:
+                register_button = driver.find_element(By.ID, "btnRegister")
+                register_button.click()
+                driver.implicitly_wait(5)
+                print("The lesson has been registered successfully!")
+            except (StaleElementReferenceException, NoSuchElementException) as e:
+                print("The lesson registration failed.")
+            return
+        elif lesson_state == LessonState.OPEN_FULLY_BOOKED:
+            try:
+                # Refresh the webpage until the lesson_state changes.
+                while lesson_state == LessonState.OPEN_FULLY_BOOKED:
+                    print(f"The lesson is fully booked, refreshing at {frequency}Hz.")
+                    driver.refresh()
+                    lesson_state = get_lesson_state(driver)
+                    driver.implicitly_wait(1 / frequency)
+            except KeyboardInterrupt as e:
+                return
+        else:
+            print("Unknown lesson state")
+            return
 
 
 def main():
@@ -106,12 +174,9 @@ def main():
     my_parser.add_argument(
         '-f', '--frequency', help='The refreshing frequency for registration. The frequency should be <= 0.5Hz to '
                                   'allow page loading during refreshing', default=0.5)
-    my_parser.add_argument(
-        '-attempts', '--attempts', help='The number of attempts to register when the lesson has been released.',
-        default=50)
     my_parser.add_argument('--SWITCHaai-ETH', action='store_true', help='Enable login by SWITCHaai ETH Zurich.')
     my_args = my_parser.parse_args()
-    register_for_asvz_lesson(my_args.id, my_args.frequency, my_args.attempts, my_args.SWITCHaai_ETH)
+    register_for_asvz_lesson(my_args.id, my_args.frequency, my_args.SWITCHaai_ETH)
 
 
 if __name__ == '__main__':
