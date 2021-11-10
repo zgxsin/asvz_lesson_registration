@@ -3,17 +3,16 @@ This script registers for the ASVZ lesson automatically.
 
 ## Get Started
 ### Use the ASVZ membership Account
-Update line 36 and line 40 with the ASVZ membership username and password respectively:
-```
-   login_user_name.send_keys("your_username")
-   login_password.send_keys("your_password")
+Update the line below with the ASVZ membership account username and password:
+```bash
+    asvz_account_login(driver, "your_username", "your_password")
 ```
 ### Use the University Account
-Update the university in line 52. Currently, only `ETH Zurich` is supported. Please open an issue if you need support for other universities.
+Currently, only `ETH Zurich` is supported. Please open an issue if you need support for other universities.
+Update the line below with the University account username and password.
 ```bash
- aai_portal = driver.find_element(By.XPATH, "//div[@title='Universities: ETH Zurich']")
+  asvz_eth_portal_login(driver, "your_username", "your_password")
 ```
-Also update line 60 and line 62 with the University account username and password respectively.
 
 Go to the ASVZ website and find the lesson ID. For example, the lesson ID is 241073 for this lesson: https://schalter.asvz.ch/tn/lessons/241073.
 Afterwards, run the following command

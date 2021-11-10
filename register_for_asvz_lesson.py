@@ -119,8 +119,10 @@ def register_for_asvz_lesson(lesson_id, frequency, aai_login) -> None:
     login_button.click()
     driver.implicitly_wait(5)
     if not aai_login:
+        # Todo: add your ASVZ membership account username and password here.
         asvz_account_login(driver, "your_username", "your_password")
     else:
+        # Todo: add your University account username and password here.
         asvz_eth_portal_login(driver, "your_username", "your_password")
 
     driver.implicitly_wait(5)
