@@ -147,7 +147,7 @@ def register_for_asvz_lesson(lesson_id, frequency, aai_login) -> None:
             try:
                 register_button = driver.find_element(By.ID, "btnRegister")
                 register_button.click()
-                driver.implicitly_wait(5)
+                driver.implicitly_wait(10)
                 print("The lesson has been registered successfully!")
             except (StaleElementReferenceException, NoSuchElementException) as e:
                 print("The lesson registration failed.")
