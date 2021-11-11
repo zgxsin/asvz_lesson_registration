@@ -14,6 +14,16 @@ Update the line below with the University account username and password.
   asvz_eth_portal_login(driver, "your_username", "your_password")
 ```
 
+### Execution
 Go to the ASVZ website and find the lesson ID. For example, the lesson ID is 241073 for this lesson: https://schalter.asvz.ch/tn/lessons/241073.
-Afterwards, run the following command
-`python3 register_for_asvz_lesson.py -i 241073` to register for this lesson.
+If you are using ASVZ membership account, run the following command :
+```
+python3 register_for_asvz_lesson.py -i 241073
+```
+
+If you are using ETH Zurich University account, run the following command :
+```
+python3 register_for_asvz_lesson.py -i 241073 --SWITCHaai-ETH
+```
+
+
