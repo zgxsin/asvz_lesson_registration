@@ -149,6 +149,7 @@ def register_for_asvz_lesson(lesson_id, frequency, aai_login) -> None:
                 print("The lesson has been registered successfully!")
             except (StaleElementReferenceException, NoSuchElementException) as e:
                 print("The lesson registration failed. {}. Retrying...".format(e))
+                lesson_state = get_lesson_state(driver)
                 continue
             return
         elif lesson_state == LessonState.OPEN_FULLY_BOOKED:
@@ -163,6 +164,7 @@ def register_for_asvz_lesson(lesson_id, frequency, aai_login) -> None:
                 return
         else:
             print("Unknown lesson state. Retrying...")
+            lesson_state = get_lesson_state(driver)
             continue
 
 
