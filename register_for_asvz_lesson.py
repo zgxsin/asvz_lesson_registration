@@ -86,8 +86,6 @@ def get_lesson_state(web_driver):
             lesson_state = LessonState.UNKNOWN
             print("Lesson state is: UNKNOWN")
     else:
-        lessons_enrollment_button = web_driver.find_elements(By.ID, "btnRegister")
-        assert (len(lessons_enrollment_button) != 0)
         if len(web_driver.find_elements(By.CSS_SELECTOR, ".disabled")) != 0:
             lesson_state = LessonState.NOT_OPEN
             print("Lesson state is: NOT_OPEN")
@@ -150,7 +148,8 @@ def register_for_asvz_lesson(lesson_id, frequency, aai_login) -> None:
                 driver.implicitly_wait(10)
                 print("The lesson has been registered successfully!")
             except (StaleElementReferenceException, NoSuchElementException) as e:
-                print("The lesson registration failed.")
+                print("The lesson registration failed. {}. Retrying...".format(e))
+                continue
             return
         elif lesson_state == LessonState.OPEN_FULLY_BOOKED:
             try:
@@ -163,8 +162,8 @@ def register_for_asvz_lesson(lesson_id, frequency, aai_login) -> None:
             except KeyboardInterrupt as e:
                 return
         else:
-            print("Unknown lesson state")
-            return
+            print("Unknown lesson state. Retrying...")
+            continue
 
 
 def main():
@@ -175,7 +174,7 @@ def main():
         '-i', '--id', help='The ASVZ lesson ID.', type=str, required=True)
     my_parser.add_argument(
         '-f', '--frequency', help='The refreshing frequency for registration. The frequency should be <= 0.5Hz to '
-                                  'allow page loading during refreshing', default=0.5)
+                                  'allow page loading during refreshing', type=int, default=0.5)
     my_parser.add_argument('--SWITCHaai-ETH', action='store_true', help='Enable login by SWITCHaai ETH Zurich.')
     my_args = my_parser.parse_args()
     register_for_asvz_lesson(my_args.id, my_args.frequency, my_args.SWITCHaai_ETH)
