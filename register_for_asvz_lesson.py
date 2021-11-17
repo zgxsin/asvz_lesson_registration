@@ -89,9 +89,12 @@ def get_lesson_state(web_driver):
         if len(web_driver.find_elements(By.CSS_SELECTOR, ".disabled")) != 0:
             lesson_state = LessonState.NOT_OPEN
             print("Lesson state is: NOT_OPEN")
-        else:
+        elif len(web_driver.find_elements(By.ID, "btnRegister")) != 0:
             lesson_state = LessonState.OPEN_AVAILABLE
             print("Lesson state is: OPEN_AVAILABLE")
+        else:
+            lesson_state = LessonState.UNKNOWN
+            print("Lesson state is: UNKNOWN")
     return lesson_state
 
 
@@ -164,6 +167,7 @@ def register_for_asvz_lesson(lesson_id, frequency, aai_login) -> None:
                 return
         else:
             print("Unknown lesson state. Retrying...")
+            driver.implicitly_wait(2)
             lesson_state = get_lesson_state(driver)
             continue
 
